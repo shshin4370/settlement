@@ -47,7 +47,6 @@ from settlement.main import app
 from settlement.models.models import Order, OrderStatus, SettlementStatus
 from settlement.services.settlement_service import SettlementService
 
-
 # ── 픽스처 ────────────────────────────────────────────────────────────
 
 @pytest.fixture
