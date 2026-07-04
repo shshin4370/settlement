@@ -36,6 +36,7 @@
       자체를 제거하는 걸 고려해볼 만합니다.
   이 구간들을 빼고도 80% 기준은 충분히 넘습니다.
 """
+
 import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -48,6 +49,7 @@ from settlement.models.models import Order, OrderStatus, SettlementStatus
 from settlement.services.settlement_service import SettlementService
 
 # ── 픽스처 ────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def client():
@@ -80,34 +82,37 @@ def unique_merchant(prefix: str = "M-API") -> str:
 
 # ── 모델 단위 테스트 ──────────────────────────────────────────────────
 
+
 class TestOrderModel:
     def test_fee_amount(self):
-        o = Order(order_id="T1", merchant_id="M", customer_id="C",
-                  amount=Decimal("100000"))
+        o = Order(order_id="T1", merchant_id="M", customer_id="C", amount=Decimal("100000"))
         assert o.fee_amount == Decimal("3000")
 
     def test_net_amount(self):
-        o = Order(order_id="T2", merchant_id="M", customer_id="C",
-                  amount=Decimal("100000"))
+        o = Order(order_id="T2", merchant_id="M", customer_id="C", amount=Decimal("100000"))
         assert o.net_amount == Decimal("97000")
 
     def test_default_status_pending(self):
-        o = Order(order_id="T3", merchant_id="M", customer_id="C",
-                  amount=Decimal("50000"))
+        o = Order(order_id="T3", merchant_id="M", customer_id="C", amount=Decimal("50000"))
         assert o.status == OrderStatus.PENDING
 
     def test_negative_amount_raises(self):
         with pytest.raises(Exception):
-            Order(order_id="T4", merchant_id="M", customer_id="C",
-                  amount=Decimal("-1"))
+            Order(order_id="T4", merchant_id="M", customer_id="C", amount=Decimal("-1"))
 
     def test_fee_rounding(self):
-        o = Order(order_id="T5", merchant_id="M", customer_id="C",
-                  amount=Decimal("33333"), fee_rate=Decimal("0.03"))
+        o = Order(
+            order_id="T5",
+            merchant_id="M",
+            customer_id="C",
+            amount=Decimal("33333"),
+            fee_rate=Decimal("0.03"),
+        )
         assert o.fee_amount == Decimal("1000")
 
 
 # ── 서비스 단위 테스트 ────────────────────────────────────────────────
+
 
 class TestSettlementService:
     def test_add_and_complete_order(self, svc, sample_order):
@@ -124,32 +129,30 @@ class TestSettlementService:
         merchant = "M-CALC"
         amounts = [Decimal("50000"), Decimal("100000"), Decimal("200000")]
         for i, amt in enumerate(amounts):
-            o = Order(order_id=f"O-{i}", merchant_id=merchant,
-                      customer_id="C", amount=amt)
+            o = Order(order_id=f"O-{i}", merchant_id=merchant, customer_id="C", amount=amt)
             svc.add_order(o)
             svc.complete_order(o.order_id)
 
         start = datetime.utcnow() - timedelta(hours=1)
-        end   = datetime.utcnow() + timedelta(hours=1)
-        rec   = svc.calculate_settlement(merchant, start, end)
+        end = datetime.utcnow() + timedelta(hours=1)
+        rec = svc.calculate_settlement(merchant, start, end)
 
         expected_sales = sum(amounts)
-        expected_fee   = sum(a * Decimal("0.03") for a in amounts)
+        expected_fee = sum(a * Decimal("0.03") for a in amounts)
 
-        assert rec.order_count  == 3
-        assert rec.total_sales  == expected_sales
+        assert rec.order_count == 3
+        assert rec.total_sales == expected_sales
         assert rec.total_fee.quantize(Decimal("1")) == expected_fee.quantize(Decimal("1"))
-        assert rec.net_amount   == expected_sales - rec.total_fee
-        assert rec.status       == SettlementStatus.PENDING
+        assert rec.net_amount == expected_sales - rec.total_fee
+        assert rec.status == SettlementStatus.PENDING
 
     def test_pending_orders_excluded(self, svc):
-        o = Order(order_id="PEND-1", merchant_id="M-X",
-                  customer_id="C", amount=Decimal("100000"))
+        o = Order(order_id="PEND-1", merchant_id="M-X", customer_id="C", amount=Decimal("100000"))
         svc.add_order(o)
 
         start = datetime.utcnow() - timedelta(hours=1)
-        end   = datetime.utcnow() + timedelta(hours=1)
-        rec   = svc.calculate_settlement("M-X", start, end)
+        end = datetime.utcnow() + timedelta(hours=1)
+        rec = svc.calculate_settlement("M-X", start, end)
 
         assert rec.order_count == 0
         assert rec.total_sales == Decimal("0")
@@ -172,7 +175,7 @@ class TestSettlementService:
         svc.add_order(sample_order)
         svc.complete_order(sample_order.order_id)
 
-        rec  = svc.calculate_settlement(
+        rec = svc.calculate_settlement(
             "M-TEST",
             datetime.utcnow() - timedelta(hours=1),
             datetime.utcnow() + timedelta(hours=1),
@@ -187,8 +190,7 @@ class TestSettlementService:
 
     def test_list_settlements_filter(self, svc):
         for m in ["M-A", "M-B"]:
-            o = Order(order_id=f"O-{m}", merchant_id=m,
-                      customer_id="C", amount=Decimal("10000"))
+            o = Order(order_id=f"O-{m}", merchant_id=m, customer_id="C", amount=Decimal("10000"))
             svc.add_order(o)
             svc.complete_order(o.order_id)
             svc.calculate_settlement(
@@ -203,8 +205,9 @@ class TestSettlementService:
     def test_list_settlements_merchant_and_status_combined(self, svc):
         merchant = "M-COMBINED"
         for i in range(2):
-            o = Order(order_id=f"CMB-{i}", merchant_id=merchant,
-                      customer_id="C", amount=Decimal("10000"))
+            o = Order(
+                order_id=f"CMB-{i}", merchant_id=merchant, customer_id="C", amount=Decimal("10000")
+            )
             svc.add_order(o)
             svc.complete_order(o.order_id)
 
@@ -217,15 +220,11 @@ class TestSettlementService:
         )
         svc.process_settlement(rec_completed.settlement_id)
 
-        result = svc.list_settlements(
-            merchant_id=merchant, status=SettlementStatus.COMPLETED
-        )
+        result = svc.list_settlements(merchant_id=merchant, status=SettlementStatus.COMPLETED)
         assert len(result) == 1
         assert result[0].settlement_id == rec_completed.settlement_id
 
-        result_pending = svc.list_settlements(
-            merchant_id=merchant, status=SettlementStatus.PENDING
-        )
+        result_pending = svc.list_settlements(merchant_id=merchant, status=SettlementStatus.PENDING)
         assert len(result_pending) == 1
         assert result_pending[0].settlement_id == rec_pending.settlement_id
 
@@ -237,10 +236,12 @@ class TestSettlementService:
 
     def test_get_orders_filtered_by_merchant(self, svc):
         """get_orders(merchant_id=...) - 특정 판매자만 필터링되는 분기 커버"""
-        svc.add_order(Order(order_id="GO-1", merchant_id="M-GET-A",
-                             customer_id="C", amount=Decimal("1000")))
-        svc.add_order(Order(order_id="GO-2", merchant_id="M-GET-B",
-                             customer_id="C", amount=Decimal("2000")))
+        svc.add_order(
+            Order(order_id="GO-1", merchant_id="M-GET-A", customer_id="C", amount=Decimal("1000"))
+        )
+        svc.add_order(
+            Order(order_id="GO-2", merchant_id="M-GET-B", customer_id="C", amount=Decimal("2000"))
+        )
 
         result = svc.get_orders(merchant_id="M-GET-A")
         assert len(result) == 1
@@ -248,10 +249,12 @@ class TestSettlementService:
 
     def test_get_orders_without_filter_returns_all(self, svc):
         """get_orders() - merchant_id 없이 호출하면 전체 반환되는 분기 커버"""
-        svc.add_order(Order(order_id="GO-3", merchant_id="M-GET-C",
-                             customer_id="C", amount=Decimal("3000")))
-        svc.add_order(Order(order_id="GO-4", merchant_id="M-GET-D",
-                             customer_id="C", amount=Decimal("4000")))
+        svc.add_order(
+            Order(order_id="GO-3", merchant_id="M-GET-C", customer_id="C", amount=Decimal("3000"))
+        )
+        svc.add_order(
+            Order(order_id="GO-4", merchant_id="M-GET-D", customer_id="C", amount=Decimal("4000"))
+        )
 
         result = svc.get_orders()
         order_ids = {o.order_id for o in result}
@@ -263,6 +266,7 @@ class TestSettlementService:
 
 
 # ── API 통합 테스트 ───────────────────────────────────────────────────
+
 
 class TestAPI:
     def test_health(self, client):
@@ -314,12 +318,15 @@ class TestAPI:
     def test_complete_order_success(self, client):
         """PUT /api/v1/orders/{id}/complete 성공 케이스 (main.py 321-329 커버)"""
         order_id = f"API-COMPLETE-{uuid.uuid4().hex[:6]}"
-        client.post("/api/v1/orders", json={
-            "order_id": order_id,
-            "merchant_id": "M-API",
-            "customer_id": "C-001",
-            "amount": "30000",
-        })
+        client.post(
+            "/api/v1/orders",
+            json={
+                "order_id": order_id,
+                "merchant_id": "M-API",
+                "customer_id": "C-001",
+                "amount": "30000",
+            },
+        )
 
         complete_res = client.put(f"/api/v1/orders/{order_id}/complete")
         assert complete_res.status_code == 200
@@ -336,12 +343,15 @@ class TestAPI:
     def test_list_orders_filter_by_merchant(self, client):
         merchant = unique_merchant("M-LIST")
         order_id = f"ORD-{uuid.uuid4().hex[:6]}"
-        client.post("/api/v1/orders", json={
-            "order_id": order_id,
-            "merchant_id": merchant,
-            "customer_id": "C-001",
-            "amount": "20000",
-        })
+        client.post(
+            "/api/v1/orders",
+            json={
+                "order_id": order_id,
+                "merchant_id": merchant,
+                "customer_id": "C-001",
+                "amount": "20000",
+            },
+        )
 
         res = client.get(f"/api/v1/orders?merchant_id={merchant}")
         assert res.status_code == 200
@@ -353,12 +363,15 @@ class TestAPI:
         """GET /api/v1/orders (필터 없음) - main.py 359 라인 커버.
         lifespan에서 시딩된 데이터가 있어 최소 1건 이상이어야 한다.
         """
-        client.post("/api/v1/orders", json={
-            "order_id": f"ORD-{uuid.uuid4().hex[:6]}",
-            "merchant_id": unique_merchant("M-ANY"),
-            "customer_id": "C-001",
-            "amount": "5000",
-        })
+        client.post(
+            "/api/v1/orders",
+            json={
+                "order_id": f"ORD-{uuid.uuid4().hex[:6]}",
+                "merchant_id": unique_merchant("M-ANY"),
+                "customer_id": "C-001",
+                "amount": "5000",
+            },
+        )
         res = client.get("/api/v1/orders")
         assert res.status_code == 200
         assert isinstance(res.json(), list)
@@ -378,12 +391,15 @@ class TestAPI:
         merchant = unique_merchant("M-SETTLE")
         order_id = f"ORD-{uuid.uuid4().hex[:6]}"
 
-        client.post("/api/v1/orders", json={
-            "order_id": order_id,
-            "merchant_id": merchant,
-            "customer_id": "C-001",
-            "amount": "40000",
-        })
+        client.post(
+            "/api/v1/orders",
+            json={
+                "order_id": order_id,
+                "merchant_id": merchant,
+                "customer_id": "C-001",
+                "amount": "40000",
+            },
+        )
         client.put(f"/api/v1/orders/{order_id}/complete")
 
         now = datetime.utcnow()
@@ -403,25 +419,29 @@ class TestAPI:
         merchant = unique_merchant("M-FILTER")
         order_id = f"ORD-{uuid.uuid4().hex[:6]}"
 
-        client.post("/api/v1/orders", json={
-            "order_id": order_id,
-            "merchant_id": merchant,
-            "customer_id": "C-001",
-            "amount": "15000",
-        })
+        client.post(
+            "/api/v1/orders",
+            json={
+                "order_id": order_id,
+                "merchant_id": merchant,
+                "customer_id": "C-001",
+                "amount": "15000",
+            },
+        )
         client.put(f"/api/v1/orders/{order_id}/complete")
 
         now = datetime.utcnow()
-        create_res = client.post("/api/v1/settlements", json={
-            "merchant_id": merchant,
-            "period_start": (now - timedelta(hours=1)).isoformat(),
-            "period_end": (now + timedelta(hours=1)).isoformat(),
-        })
+        create_res = client.post(
+            "/api/v1/settlements",
+            json={
+                "merchant_id": merchant,
+                "period_start": (now - timedelta(hours=1)).isoformat(),
+                "period_end": (now + timedelta(hours=1)).isoformat(),
+            },
+        )
         settlement_id = create_res.json()["settlement_id"]
 
-        pending_res = client.get(
-            f"/api/v1/settlements?merchant_id={merchant}&status=pending"
-        )
+        pending_res = client.get(f"/api/v1/settlements?merchant_id={merchant}&status=pending")
         assert pending_res.status_code == 200
         assert len(pending_res.json()) == 1
 
@@ -435,15 +455,11 @@ class TestAPI:
         assert process_res.status_code == 200
         assert process_res.json()["status"] == "completed"
 
-        completed_after = client.get(
-            f"/api/v1/settlements?merchant_id={merchant}&status=completed"
-        )
+        completed_after = client.get(f"/api/v1/settlements?merchant_id={merchant}&status=completed")
         assert len(completed_after.json()) == 1
         assert completed_after.json()[0]["settlement_id"] == settlement_id
 
-        pending_after = client.get(
-            f"/api/v1/settlements?merchant_id={merchant}&status=pending"
-        )
+        pending_after = client.get(f"/api/v1/settlements?merchant_id={merchant}&status=pending")
         assert pending_after.json() == []
 
     def test_process_settlement_not_found_returns_404(self, client):
