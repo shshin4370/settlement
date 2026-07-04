@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  IMAGE_NAME: settlement
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  ci:
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+          pip install \
+            pytest \
+            pytest-cov \
+            ruff \
+            black
+
+      #####################################################
+      # Lint
+      #####################################################
+
+      - name: Ruff Lint
+        run: |
+          ruff check .
+
+      - name: Black Format Check
+        run: |
+          black --check .
+
+      #####################################################
+      # Test
+      #####################################################
+
+      - name: Run Pytest
+        run: |
+          pytest \
+            --cov=src \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=80
+
