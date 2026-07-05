@@ -86,11 +86,11 @@ def unique_merchant(prefix: str = "M-API") -> str:
 class TestOrderModel:
     def test_fee_amount(self):
         o = Order(order_id="T1", merchant_id="M", customer_id="C", amount=Decimal("100000"))
-        assert o.fee_amount == Decimal("3000")
+        assert o.fee_amount == Decimal("5000")
 
     def test_net_amount(self):
         o = Order(order_id="T2", merchant_id="M", customer_id="C", amount=Decimal("100000"))
-        assert o.net_amount == Decimal("97000")
+        assert o.net_amount == Decimal("95000")
 
     def test_default_status_pending(self):
         o = Order(order_id="T3", merchant_id="M", customer_id="C", amount=Decimal("50000"))
@@ -108,7 +108,7 @@ class TestOrderModel:
             amount=Decimal("33333"),
             fee_rate=Decimal("0.05"),
         )
-        assert o.fee_amount == Decimal("1000")
+        assert o.fee_amount == Decimal("1667")
 
 
 # ── 서비스 단위 테스트 ────────────────────────────────────────────────
