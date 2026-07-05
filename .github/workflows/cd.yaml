@@ -94,7 +94,7 @@ jobs:
 
     - name: Wait rollout
       run: |
-        kubectl rollout status deployment/my-settlement --timeout=180s
+        kubectl rollout status deployment/settlement --timeout=180s
 
     #####################################################
     # Verify
