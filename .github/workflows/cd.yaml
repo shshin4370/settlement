@@ -78,7 +78,7 @@ jobs:
 
     - name: Deploy application
       run: |
-        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -n settlement -f k8s/deployment.yaml
 
     #####################################################
     # Service
@@ -86,7 +86,7 @@ jobs:
 
     - name: Deploy service
       run: |
-        kubectl apply -f k8s/service.yaml
+        kubectl apply -n settlement -f k8s/service.yaml
 
     #####################################################
     # Rollout
@@ -94,7 +94,7 @@ jobs:
 
     - name: Wait rollout
       run: |
-        kubectl rollout status deployment/settlement --timeout=180s
+        kubectl rollout status deployment/settlement --timeout=180s -n settlement
 
     #####################################################
     # Verify
@@ -102,6 +102,6 @@ jobs:
 
     - name: Verify resources
       run: |
-        kubectl get deployment
-        kubectl get pods
-        kubectl get svc
+        kubectl get deployment -n settlement
+        kubectl get pods -n settlement
+        kubectl get svc -n settlement

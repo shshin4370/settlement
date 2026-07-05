@@ -71,7 +71,7 @@ def sample_order():
         merchant_id="M-TEST",
         customer_id="C-001",
         amount=Decimal("100000"),
-        fee_rate=Decimal("0.03"),
+        fee_rate=Decimal("0.05"),
     )
 
 
@@ -106,7 +106,7 @@ class TestOrderModel:
             merchant_id="M",
             customer_id="C",
             amount=Decimal("33333"),
-            fee_rate=Decimal("0.03"),
+            fee_rate=Decimal("0.05"),
         )
         assert o.fee_amount == Decimal("1000")
 
@@ -138,7 +138,7 @@ class TestSettlementService:
         rec = svc.calculate_settlement(merchant, start, end)
 
         expected_sales = sum(amounts)
-        expected_fee = sum(a * Decimal("0.03") for a in amounts)
+        expected_fee = sum(a * Decimal("0.05") for a in amounts)
 
         assert rec.order_count == 3
         assert rec.total_sales == expected_sales
@@ -288,7 +288,7 @@ class TestAPI:
             "merchant_id": "M-API",
             "customer_id": "C-001",
             "amount": "75000",
-            "fee_rate": "0.03",
+            "fee_rate": "0.05",
             "status": "pending",
             "created_at": datetime.utcnow().isoformat(),
         }
