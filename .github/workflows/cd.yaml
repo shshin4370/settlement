@@ -1,0 +1,107 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+env:
+  IMAGE_NAME: settlement
+  IMAGE_TAG: v1.0
+  KIND_CLUSTER: settlement-local
+
+jobs:
+
+  deploy:
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    runs-on:
+      - self-hosted
+      - settlement
+
+    permissions:
+      contents: read
+
+    steps:
+
+    #####################################################
+    # Checkout
+    #####################################################
+
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    #####################################################
+    # Verify image
+    #####################################################
+
+    - name: Verify Docker image
+      run: |
+        docker image inspect settlement:latest
+
+    #####################################################
+    # Tag image
+    #####################################################
+
+    - name: Tag Docker image
+      run: |
+        docker tag settlement:latest ${IMAGE_NAME}:${IMAGE_TAG}
+
+    #####################################################
+    # Load image into kind
+    #####################################################
+
+    - name: Load image to kind
+      run: |
+        kind load docker-image \
+          ${IMAGE_NAME}:${IMAGE_TAG} \
+          --name ${KIND_CLUSTER}
+
+
+    #####################################################
+    # Update image-name in k8s/deployment.yaml
+    #####################################################
+
+    - name: Update image
+      run: |
+        sed -i \
+          "s|settlement:PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g" \
+          k8s/deployment.yaml
+
+
+    #####################################################
+    # Deploy
+    #####################################################
+
+    - name: Deploy application
+      run: |
+        kubectl apply -f k8s/deployment.yaml
+
+    #####################################################
+    # Service
+    #####################################################
+
+    - name: Deploy service
+      run: |
+        kubectl apply -f k8s/service.yaml
+
+    #####################################################
+    # Rollout
+    #####################################################
+
+    - name: Wait rollout
+      run: |
+        kubectl rollout status deployment/my-settlement --timeout=180s
+
+    #####################################################
+    # Verify
+    #####################################################
+
+    - name: Verify resources
+      run: |
+        kubectl get deployment
+        kubectl get pods
+        kubectl get svc

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: settlement
-          image: settlement:latest
+          image: settlement:PLACEHOLDER
           # 레지스트리가 없으므로 반드시 IfNotPresent (또는 Never)로 고정
           # Always로 두면 pull 시도 후 로컬에 없다며 실패함
           imagePullPolicy: IfNotPresent
