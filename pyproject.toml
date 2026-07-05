@@ -14,8 +14,8 @@ select = ["E", "F", "I", "B"]
 ignore = ["E501", "B008", "B904", "B017"]  # line-length는 black이 이미 강제하므로 중복 경고 무시
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
+testpaths = ["tests"] # 테스트 소스 폴더를 지정함
+pythonpath = ["src"]  # 원본 소스폴더를 지정함
 
 [tool.coverage.run]
 source = ["settlement"]

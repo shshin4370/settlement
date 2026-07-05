@@ -30,7 +30,7 @@ jobs:
     steps:
 
     #####################################################
-    # Source Checkout
+    # Checkout
     #####################################################
 
     - name: Checkout source
@@ -47,7 +47,7 @@ jobs:
         cache: pip
 
     #####################################################
-    # Install Packages
+    # Install
     #####################################################
 
     - name: Install Python packages
@@ -63,19 +63,23 @@ jobs:
           black
 
     #####################################################
-    # Lint
+    # Ruff
     #####################################################
 
     - name: Ruff Lint
       run: |
         ruff check .
 
+    #####################################################
+    # Black
+    #####################################################
+
     - name: Black Format Check
       run: |
         black --check .
 
     #####################################################
-    # Test
+    # Pytest
     #####################################################
 
     - name: Run Pytest
@@ -96,11 +100,11 @@ jobs:
           -t ${IMAGE_NAME}:${IMAGE_TAG} .
 
     #####################################################
-    # Trivy Security Scan
+    # Trivy
     #####################################################
 
-    - name: Run Trivy Scan
-      uses: aquasecurity/trivy-action@0.33.1
+    - name: Scan Docker Image
+      uses: aquasecurity/trivy-action@v0
       with:
         image-ref: "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
         format: table
@@ -109,7 +113,7 @@ jobs:
         exit-code: "1"
 
     #####################################################
-    # Upload Coverage
+    # Coverage
     #####################################################
 
     - name: Upload Coverage Report
